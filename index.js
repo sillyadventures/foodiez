@@ -14,7 +14,8 @@ const methodOverride = require('method-override') // for accessing PUT / DELETE
 // requiring actual file now
 // PITSTOP, look at file inside models folder now
 const Restaurant = require('./models/restaurant')
-
+const User = require('./models/user')
+const Review = require('./models/review')
 // initiating express, by calling express variable
 const app = express()
 
@@ -53,6 +54,66 @@ mongoose.connect(dbUrl, {
 // note: remember all the model file we created on models/restaurant.js,
 // we'll use it again
 
+// 19 OCT
+// NOW I'M ABLE TO CREATE NEW USER, BUT WE NEED TO REQUIRE
+// THE MODEL FILE FIRST
+
+// NEW ROUTE - REGISTER - to show the new user form
+app.get('/register', (req, res) => {
+  res.send('register form page')
+})
+
+// NEW ROUTE - POST NEW USER - to handle register form submission
+// psuedocode
+// - read the form data
+// - create new user object
+// - use mongoose to create those document in the db
+// - redirect to somewhere
+app.post('/register', (req, res) => {
+  var newUser = new User({
+    name: 'Shumin Huang',
+    email: 'shumin@ga.co',
+    password: 'test123'
+  }) // creating empty `User` object
+
+  newUser.save() // save the object that was created
+  .then(
+    (user) => res.send(`${user}`),
+    err => res.send(err)
+  )
+
+  // if we can run then(), the user has been saved
+
+  // res.send(newUser)
+})
+
+/// FIND ALL REVIEW
+app.get('/reviews', (req, res) => {
+  Review.find()
+  .populate('author')
+  // it will go to the field called `author`
+  // and look at the schema
+  // find what it's referring to
+  .then(data => res.send(data))
+})
+
+// CREATE NEW REVIEW
+app.post('/review', (req, res) => {
+  var newReview = new Review({
+    title: 'Another one',
+    description: 'Another another',
+    author: '59e81aec101a3fcfb9599a9b'
+  }) // creating empty `User` object
+
+  // res.send( newReview )
+  newReview.save() // save the object that was created
+  .then(
+    (doc) => res.send(doc),
+    // success flow, will be given `doc` that is saved
+    err => res.send('error happened')
+  )
+})
+
 // READ ALL
 app.get('/', (req, res) => {
   // the return of then
@@ -81,12 +142,17 @@ app.get('/restaurants/new', (req, res) => {
 // READ ONE
 app.get('/restaurants/:id', (req, res) => {
   // instead of find all, we can `findById`
-  Restaurant.findById(req.params.id) // no need limit since there's only one
+  Restaurant
+  .findById(req.params.id) // no need limit since there's only one
+  .populate('owner')
+  // .populate(<field name>)
   .then(restaurant => {
     // not restaurants, cos it's single restaurant
 
     // PITSTOP: look at the views folders here, compare it with the res.render
     // first argument
+
+    // res.send(restaurant)
 
     res.render('restaurants/show', {
       restaurant
@@ -111,13 +177,41 @@ app.post('/restaurants', (req, res) => {
   newRestaurant.name = formData.name
   newRestaurant.cuisine = formData.cuisine
 
+  // new field for `owner`
+  newRestaurant.owner = '59e81ae9c90d27819c166d67'
+
   // when save function is done
   // the newRestaurant will have an id, hence we can go straight to the
   // newly created restaurant page
+
+  // res.send(newRestaurant)
+  // use `res.send` to test the output of anything
+
   newRestaurant.save()
-  .then(() => res.redirect(`/restaurants/${newRestaurant.id}`))
-  .catch(err => console.log(err))
+  // UPDATE. 19 Oct
+  .then(
+    () => res.redirect(`/restaurants/${newRestaurant.id}`),
+    err => res.send(err)
+  ) // why? mongoose save(), doesn't have .catch()
 })
+
+
+// NEW ROUTE - PROFILE - to show the user profile page
+// pseudocode
+// get the slug
+// find user by the slug
+// render profile page with user details based on the slug
+app.get('/profile/:slug', (req, res) => {
+  // res.send(`this is the profile page for ${req.params.slug}`)
+  // findOne method is from mongoose. google it up
+  User.findOne({
+    slug: req.params.slug
+  })
+  .then((user) => {
+    res.send(user)
+  }) // if i found the user
+})
+
 
 // UPDATE ONE
 // pseudocode

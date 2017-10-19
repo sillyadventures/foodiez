@@ -32,7 +32,22 @@ const restaurantSchema = new Schema({
     score: Number
   }],
   name: String,
-  restaurant_id: String
+  slug: String,
+  restaurant_id: String,
+  // 19 Oct. update restaurants to have `owner` fields too, ref: User
+  owner: {
+    type: Schema.Types.ObjectId,
+    ref: 'User'
+  }
+})
+
+restaurantSchema.pre('save', function(next) {
+  var resName = this
+  // logic to create slug
+  resName.slug = this.name.toLowerCase().split(' ').join('-')
+
+  console.log('pre save flow', resName)
+  next()
 })
 
 // Think that the line below here
